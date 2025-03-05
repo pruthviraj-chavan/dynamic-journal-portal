@@ -1,181 +1,148 @@
 
-import React, { ReactNode, useState, useCallback } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import ThemeToggle from "@/components/ThemeToggle";
-import {
-  ChevronLeft,
-  BookOpen,
-  Home,
-  BookOpenText,
-  ListFilter,
-  LogOut,
-  PlusCircle,
-  Users,
-  Settings
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { useTheme } from "@/context/ThemeContext";
+import { Sun, Moon, Menu, X, PlusCircle, Layers, FileText, Users, Settings, LogOut } from "lucide-react";
+import AdminLogin from "@/components/AdminLogin";
 
 interface AdminLayoutProps {
-  children: ReactNode;
+  children: React.ReactNode;
   title?: string;
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Admin Panel" }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const toggleSidebar = useCallback(() => {
-    setIsCollapsed((prev) => !prev);
+  useEffect(() => {
+    const loginStatus = localStorage.getItem("isAdminLoggedIn");
+    setIsLoggedIn(loginStatus === "true");
   }, []);
 
-  const handleLogout = useCallback(() => {
-    // In a real app, handle actual logout
-    navigate("/");
-  }, [navigate]);
+  const handleLogout = () => {
+    localStorage.removeItem("isAdminLoggedIn");
+    setIsLoggedIn(false);
+    navigate("/admin");
+  };
 
-  const sidebarLinks = [
-    { to: "/admin", label: "Dashboard", icon: Home },
-    { to: "/admin/volumes", label: "Volumes", icon: BookOpenText },
-    { to: "/admin/papers", label: "Papers", icon: ListFilter },
-    { to: "/admin/authors", label: "Authors", icon: Users },
-    { to: "/admin/settings", label: "Settings", icon: Settings },
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+  };
+
+  if (!isLoggedIn) {
+    return <AdminLogin onLogin={handleLogin} />;
+  }
+
+  const menuItems = [
+    { icon: Layers, label: "Volumes", path: "/admin/volumes" },
+    { icon: FileText, label: "Papers", path: "/admin/papers" },
+    { icon: Users, label: "Authors", path: "/admin/authors" },
+    { icon: Settings, label: "Settings", path: "/admin/settings" },
   ];
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "h-screen sticky top-0 bg-card border-r border-border/50 flex flex-col transition-all duration-300",
-          isCollapsed ? "w-[70px]" : "w-[250px]"
-        )}
-      >
-        {/* Sidebar Header */}
-        <div className="py-6 px-4 border-b border-border/50 flex items-center justify-between">
-          <div className={cn("flex items-center", isCollapsed && "justify-center w-full")}>
-            <BookOpen className="h-6 w-6 text-primary" />
-            {!isCollapsed && (
-              <span className="ml-2 font-semibold">Admin Panel</span>
-            )}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn("rounded-full", isCollapsed && "hidden")}
-            onClick={toggleSidebar}
+    <div className="flex h-screen bg-background">
+      {/* Sidebar - Desktop */}
+      <div className="hidden md:flex md:flex-col md:w-64 bg-card border-r">
+        <div className="p-4 border-b">
+          <Link to="/" className="flex items-center space-x-2 font-bold text-xl">
+            <span>Research Admin</span>
+          </Link>
+        </div>
+        <div className="flex flex-col flex-1 overflow-y-auto">
+          <nav className="flex-1 px-2 py-4 space-y-1">
+            {menuItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center px-4 py-3 rounded-md transition-colors ${
+                  location.pathname === item.path
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted"
+                }`}
+              >
+                <item.icon className="h-5 w-5 mr-3" />
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <div className="p-4 border-t">
+          <Button 
+            variant="outline" 
+            onClick={handleLogout} 
+            className="w-full flex items-center justify-center"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
           </Button>
         </div>
+      </div>
 
-        {/* Sidebar Navigation */}
-        <nav className="flex-1 py-4 px-2 overflow-y-auto">
-          <ul className="space-y-1">
-            {sidebarLinks.map((link) => (
-              <li key={link.to}>
-                <NavLink
-                  to={link.to}
-                  end={link.to === "/admin"}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center py-2 px-3 rounded-md transition-colors",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-secondary text-foreground/70 hover:text-foreground",
-                      isCollapsed && "justify-center"
-                    )
-                  }
-                >
-                  <link.icon className="h-5 w-5" />
-                  {!isCollapsed && <span className="ml-3">{link.label}</span>}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-4 pt-4 border-t border-border/50">
-            <Button
-              variant="outline"
-              className={cn(
-                "w-full justify-start",
-                isCollapsed && "justify-center"
-              )}
-              onClick={() => navigate("/admin/new-volume")}
-            >
-              <PlusCircle className="h-4 w-4" />
-              {!isCollapsed && <span className="ml-2">New Volume</span>}
-            </Button>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-full justify-start mt-2",
-                isCollapsed && "justify-center"
-              )}
-              onClick={() => navigate("/admin/new-paper")}
-            >
-              <PlusCircle className="h-4 w-4" />
-              {!isCollapsed && <span className="ml-2">New Paper</span>}
-            </Button>
-          </div>
-        </nav>
-
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-border/50 flex items-center justify-between">
-          {isCollapsed ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full mx-auto"
-              onClick={toggleSidebar}
-            >
-              <ChevronLeft className="h-4 w-4 rotate-180" />
-            </Button>
-          ) : (
-            <>
-              <ThemeToggle />
-              <Button
-                variant="ghost"
+      {/* Mobile Menu Button and Drawer */}
+      <div className="flex flex-col flex-1">
+        <header className="bg-card shadow z-10">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center">
+              <Button 
+                variant="ghost" 
                 size="icon"
-                className="rounded-full text-destructive"
+                className="md:hidden mr-2" 
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                {isMobileMenuOpen ? <X /> : <Menu />}
+              </Button>
+              <h1 className="text-xl font-semibold">{title}</h1>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleTheme}
+              >
+                {theme === "dark" ? <Sun /> : <Moon />}
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="md:hidden" 
                 onClick={handleLogout}
               >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </>
-          )}
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1">
-        <header className="bg-card border-b border-border/50 py-4 px-6 sticky top-0 z-10">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-display font-bold">{title}</h1>
-            <div className="flex items-center space-x-4">
-              {isCollapsed && <ThemeToggle />}
-              <Button
-                variant="outline"
-                size="sm"
-                className="hidden md:flex"
-                onClick={() => navigate("/")}
-              >
-                View Site
+                <LogOut />
               </Button>
             </div>
           </div>
         </header>
 
-        <motion.main 
-          className="p-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {children}
-        </motion.main>
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden absolute inset-x-0 top-16 z-50 bg-background border-b shadow-lg">
+            <nav className="px-2 pt-2 pb-4 space-y-1">
+              {menuItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center px-4 py-3 rounded-md ${
+                    location.pathname === item.path
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted"
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <item.icon className="h-5 w-5 mr-3" />
+                  <span>{item.label}</span>
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
   );

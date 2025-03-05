@@ -1,141 +1,160 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "@/layouts/AdminLayout";
-import { motion } from "framer-motion";
-import { usePapers } from "@/context/PapersContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { Edit, MoreVertical, Plus, Search, Trash } from "lucide-react";
+import { usePapers } from "@/context/PapersContext";
+import { PlusCircle, Search, Edit, Trash2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/components/ui/use-toast";
 
 const AdminVolumes = () => {
-  const { volumes, deleteVolume, getPapersByVolume } = usePapers();
-  const [searchQuery, setSearchQuery] = useState("");
-  
-  // Filter volumes based on search query
-  const filteredVolumes = volumes.filter(volume => {
-    const query = searchQuery.toLowerCase();
-    return (
-      volume.title.toLowerCase().includes(query) ||
-      volume.description.toLowerCase().includes(query) ||
-      volume.year.toString().includes(query)
-    );
-  });
-  
-  // Sort volumes by year and month (descending)
-  const sortedVolumes = [...filteredVolumes].sort((a, b) => {
-    if (a.year !== b.year) return b.year - a.year;
-    return b.month - a.month;
-  });
-  
+  const { volumes, getPapersByVolume, deleteVolume } = usePapers();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const filteredVolumes = volumes.filter(
+    (volume) =>
+      volume.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      volume.year.toString().includes(searchTerm)
+  );
+
+  const handleDelete = (id: string) => {
+    deleteVolume(id);
+    setDeleteId(null);
+    toast({
+      title: "Volume deleted",
+      description: "The volume has been successfully deleted",
+    });
+  };
+
   return (
-    <AdminLayout>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="p-6"
-      >
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Manage Volumes</h1>
-          <Link to="/admin/new-volume">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add New Volume
-            </Button>
-          </Link>
-        </div>
-        
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle>Search Volumes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center w-full max-w-sm">
+    <AdminLayout title="Manage Volumes">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <h2 className="text-2xl font-bold">Volumes</h2>
+          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                type="text"
-                placeholder="Search by title, year..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1"
+                type="search"
+                placeholder="Search volumes..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Button variant="ghost" size="icon" className="ml-2">
-                <Search className="h-4 w-4" />
-              </Button>
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
+            <Button asChild>
+              <Link to="/admin/new-volume">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Volume
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Issue</TableHead>
+                <TableHead>Year</TableHead>
+                <TableHead>Month</TableHead>
+                <TableHead>Papers</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredVolumes.length > 0 ? (
+                filteredVolumes.map((volume) => {
+                  const paperCount = getPapersByVolume(volume.id).length;
+                  return (
+                    <TableRow key={volume.id}>
+                      <TableCell className="font-medium">
+                        {volume.title}
+                      </TableCell>
+                      <TableCell>{volume.issueNumber}</TableCell>
+                      <TableCell>{volume.year}</TableCell>
+                      <TableCell>
+                        {new Date(0, volume.month - 1).toLocaleString(
+                          "default",
+                          { month: "long" }
+                        )}
+                      </TableCell>
+                      <TableCell>{paperCount}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            asChild
+                          >
+                            <Link to={`/admin/volume/${volume.id}`}>
+                              <Edit className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setDeleteId(volume.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
                 <TableRow>
-                  <TableHead>Volume Title</TableHead>
-                  <TableHead>Issue</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Papers</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableCell colSpan={6} className="text-center py-6">
+                    No volumes found
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedVolumes.length > 0 ? (
-                  sortedVolumes.map((volume) => {
-                    const paperCount = getPapersByVolume(volume.id).length;
-                    return (
-                      <TableRow key={volume.id}>
-                        <TableCell className="font-medium">{volume.title}</TableCell>
-                        <TableCell>{volume.issueNumber}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {new Date(volume.year, volume.month - 1).toLocaleString('default', { month: 'long' })} {volume.year}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{paperCount}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild>
-                                <Link to={`/admin/volume/${volume.id}`}>
-                                  <Edit className="mr-2 h-4 w-4" /> Edit
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => {
-                                  if (window.confirm(`Are you sure you want to delete "${volume.title}"?`)) {
-                                    deleteVolume(volume.id);
-                                  }
-                                }}
-                              >
-                                <Trash className="mr-2 h-4 w-4" /> Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-6">
-                      {searchQuery ? "No volumes found matching your search." : "No volumes have been created yet."}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </motion.div>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will delete the volume and all associated papers. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteId && handleDelete(deleteId)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 };

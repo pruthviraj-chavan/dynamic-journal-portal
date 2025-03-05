@@ -1,169 +1,95 @@
 
+import React from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "@/layouts/AdminLayout";
-import { motion } from "framer-motion";
-import { usePapers } from "@/context/PapersContext";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, BookOpen, Users, Settings, FileText, BookMarked } from "lucide-react";
+import { usePapers } from "@/context/PapersContext";
+import { Layers, FileText, Users, PlusCircle } from "lucide-react";
 
 const Admin = () => {
   const { papers, volumes } = usePapers();
-  const uniqueAuthors = new Set();
-  
-  papers.forEach(paper => {
-    paper.authors.forEach(author => {
-      uniqueAuthors.add(author.id);
-    });
-  });
-  
-  const adminCards = [
+
+  const stats = [
     {
-      title: "Volumes",
-      description: "Manage journal volumes and issues",
-      count: volumes.length,
-      icon: <BookOpen className="h-5 w-5" />,
-      link: "/admin/volumes",
-      color: "bg-blue-500"
+      title: "Total Volumes",
+      value: volumes.length,
+      icon: Layers,
+      color: "bg-blue-500",
+      link: "/admin/volumes"
     },
     {
-      title: "Papers",
-      description: "Manage research papers",
-      count: papers.length,
-      icon: <FileText className="h-5 w-5" />,
-      link: "/admin/papers",
-      color: "bg-green-500"
+      title: "Total Papers",
+      value: papers.length,
+      icon: FileText,
+      color: "bg-green-500",
+      link: "/admin/papers"
     },
     {
-      title: "Authors",
-      description: "Manage paper authors",
-      count: uniqueAuthors.size,
-      icon: <Users className="h-5 w-5" />,
-      link: "/admin/authors",
-      color: "bg-purple-500"
-    },
-    {
-      title: "Settings",
-      description: "Journal settings and configuration",
-      icon: <Settings className="h-5 w-5" />,
-      link: "/admin/settings",
-      color: "bg-amber-500"
+      title: "Total Authors",
+      value: [...new Set(papers.flatMap(paper => paper.authors.map(author => author.id)))].length,
+      icon: Users,
+      color: "bg-purple-500",
+      link: "/admin/authors"
     }
   ];
 
   return (
-    <AdminLayout>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="p-6"
-      >
-        <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {adminCards.map((card, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-            >
-              <Card className="h-full">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-center">
-                    <div className={`p-2 rounded-md text-white ${card.color}`}>
-                      {card.icon}
-                    </div>
-                    <Link to={card.link}>
-                      <Button variant="ghost" size="icon">
-                        <ArrowUpRight className="h-5 w-5" />
-                      </Button>
-                    </Link>
-                  </div>
+    <AdminLayout title="Dashboard">
+      <div className="grid gap-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Dashboard</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {stats.map((stat, index) => (
+            <Link to={stat.link} key={index}>
+              <Card className="hover:shadow-md transition-shadow">
+                <CardHeader className={`text-white rounded-t-lg ${stat.color}`}>
+                  <stat.icon className="h-8 w-8" />
                 </CardHeader>
-                <CardContent>
-                  <CardTitle className="text-2xl">{card.count !== undefined ? card.count : ""}</CardTitle>
-                  <CardDescription className="text-lg font-medium">{card.title}</CardDescription>
-                  <p className="text-sm text-muted-foreground mt-2">{card.description}</p>
+                <CardContent className="pt-6">
+                  <div className="text-3xl font-bold">{stat.value}</div>
+                  <p className="text-muted-foreground">{stat.title}</p>
                 </CardContent>
               </Card>
-            </motion.div>
+            </Link>
           ))}
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <BookMarked className="mr-2 h-5 w-5" />
-                Recent Volumes
-              </CardTitle>
+              <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent>
-              {volumes.length > 0 ? (
-                <div className="space-y-4">
-                  {volumes.slice(0, 5).map((volume) => (
-                    <div key={volume.id} className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">{volume.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Volume {volume.issueNumber} | {new Date(volume.year, volume.month - 1).toLocaleString('default', { month: 'long' })} {volume.year}
-                        </p>
-                      </div>
-                      <Link to={`/admin/volume/${volume.id}`}>
-                        <Button variant="ghost" size="sm">Manage</Button>
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No volumes created yet</p>
-              )}
-              <div className="mt-4">
+            <CardContent className="flex flex-col space-y-3">
+              <Button asChild variant="outline" className="justify-start">
                 <Link to="/admin/new-volume">
-                  <Button className="w-full">Create New Volume</Button>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add New Volume
                 </Link>
-              </div>
+              </Button>
+              <Button asChild variant="outline" className="justify-start">
+                <Link to="/admin/new-paper">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add New Paper
+                </Link>
+              </Button>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <FileText className="mr-2 h-5 w-5" />
-                Recent Papers
-              </CardTitle>
+              <CardTitle>Latest Activity</CardTitle>
             </CardHeader>
             <CardContent>
-              {papers.length > 0 ? (
-                <div className="space-y-4">
-                  {papers.slice(0, 5).map((paper) => (
-                    <div key={paper.id} className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">{paper.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {paper.authors.map(a => a.name).join(", ")}
-                        </p>
-                      </div>
-                      <Link to={`/admin/paper/${paper.id}`}>
-                        <Button variant="ghost" size="sm">Edit</Button>
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No papers published yet</p>
-              )}
-              <div className="mt-4">
-                <Link to="/admin/new-paper">
-                  <Button className="w-full">Add New Paper</Button>
-                </Link>
-              </div>
+              <p className="text-muted-foreground">
+                Recent volumes and papers will appear here.
+              </p>
             </CardContent>
           </Card>
         </div>
-      </motion.div>
+      </div>
     </AdminLayout>
   );
 };

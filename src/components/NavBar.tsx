@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@/context/ThemeContext";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Sun, Moon, BookOpen } from "lucide-react";
+import { Menu, X, Sun, Moon, BookOpen, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function NavBar() {
@@ -84,6 +84,18 @@ export default function NavBar() {
             )}
           </Button>
 
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            aria-label="Admin panel"
+            asChild
+          >
+            <Link to="/admin">
+              <Settings className="h-5 w-5" />
+            </Link>
+          </Button>
+
           {/* Mobile Menu Toggle */}
           <Button
             variant="ghost"
@@ -121,6 +133,15 @@ export default function NavBar() {
               {link.label}
             </Link>
           ))}
+          <div className="pt-2 border-t border-border/30">
+            <Link
+              to="/admin"
+              className="flex items-center space-x-2 px-4 py-2 text-primary hover:underline"
+            >
+              <Settings className="h-4 w-4" />
+              <span>Admin Panel</span>
+            </Link>
+          </div>
         </div>
       </div>
     </header>
