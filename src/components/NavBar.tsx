@@ -121,14 +121,6 @@ export default function NavBar() {
               {link.label}
             </Link>
           ))}
-          <div className="pt-2 border-t border-border/30">
-            <Link
-              to="/admin"
-              className="flex items-center space-x-2 px-4 py-2 text-primary hover:underline"
-            >
-              <span>Admin Panel</span>
-            </Link>
-          </div>
         </div>
       </div>
     </header>
