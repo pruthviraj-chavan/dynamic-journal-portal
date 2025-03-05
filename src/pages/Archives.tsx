@@ -8,7 +8,7 @@ import VolumeCard from "@/components/VolumeCard";
 import { useState } from "react";
 
 const Archives = () => {
-  const { volumes } = usePapers();
+  const { volumes, getPapersByVolume } = usePapers();
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const years = [...new Set(volumes.map(volume => volume.year))].sort((a, b) => b - a);
   
@@ -65,7 +65,10 @@ const Archives = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <Link to={`/volume/${volume.id}`}>
-                    <VolumeCard volume={volume} />
+                    <VolumeCard 
+                      volume={volume} 
+                      paperCount={getPapersByVolume(volume.id).length}
+                    />
                   </Link>
                 </motion.div>
               ))}
